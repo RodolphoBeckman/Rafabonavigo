@@ -3,46 +3,56 @@
 import { useState, useEffect, useCallback } from 'react';
 
 function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  const [storedValue, setStoredValue] = useState<T>(initialValue);
-
-  // This effect runs only on the client, after the initial render, to avoid hydration mismatch.
-  useEffect(() => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
     try {
       const item = window.localStorage.getItem(key);
-      if (item) {
-        setStoredValue(JSON.parse(item));
-      }
+      return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(error);
+      console.error(`Error reading localStorage key “${key}”:`, error);
+      return initialValue;
     }
-  }, [key]);
+  });
 
   const setValue = useCallback(
     (value: T | ((val: T) => T)) => {
       try {
-        // We use the functional update form of setStoredValue to ensure we have the latest state
-        setStoredValue((current) => {
-          const valueToStore = value instanceof Function ? value(current) : value;
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
-          }
-          return valueToStore;
-        });
+        // Use a functional update to get the latest state
+        const valueToStore = value instanceof Function ? value(storedValue) : value;
+
+        // Set the state for the current component
+        setStoredValue(valueToStore);
+
+        if (typeof window !== 'undefined') {
+          const newValue = JSON.stringify(valueToStore);
+          const oldValue = window.localStorage.getItem(key);
+          window.localStorage.setItem(key, newValue);
+
+          // Dispatch a storage event to notify other hooks on the same page and in other tabs
+          window.dispatchEvent(new StorageEvent('storage', {
+            key,
+            oldValue,
+            newValue,
+            storageArea: window.localStorage,
+          }));
+        }
       } catch (error) {
-        console.error(error);
+        console.error(`Error setting localStorage key “${key}”:`, error);
       }
     },
-    [key]
+    [key, storedValue]
   );
   
-  // This effect syncs state across tabs
+  // This effect syncs state across tabs and with other hooks on the same page
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.storageArea === window.localStorage && e.key === key && e.newValue) {
+      if (e.key === key && e.newValue) {
         try {
           setStoredValue(JSON.parse(e.newValue));
         } catch (error) {
-          console.error(error);
+          console.error(`Error parsing new value for “${key}”:`, error);
         }
       }
     };

@@ -65,8 +65,15 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
     if (photoPreview && photoPreview !== product?.photoUrl) {
       photoUrl = photoPreview;
     }
+
+    const dataToSubmit = {
+      ...values,
+      photoUrl,
+      supplierId: values.supplierId === 'none' ? undefined : values.supplierId,
+      brandId: values.brandId === 'none' ? undefined : values.brandId,
+    };
     
-    onSubmit({ ...values, photoUrl });
+    onSubmit(dataToSubmit);
     form.reset({ name: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: '', brandId: '' });
     setPhotoPreview(null);
   };
@@ -153,14 +160,14 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Fornecedor</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um fornecedor" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -174,14 +181,14 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Marca</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma marca" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                   <SelectItem value="">Nenhuma</SelectItem>
+                   <SelectItem value="none">Nenhuma</SelectItem>
                   {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                 </SelectContent>
               </Select>

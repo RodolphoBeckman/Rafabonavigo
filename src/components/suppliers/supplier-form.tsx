@@ -7,31 +7,33 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import type { Supplier } from '@/lib/types';
 
 const supplierSchema = z.object({
   name: z.string().min(3, { message: 'O nome da empresa deve ter pelo menos 3 caracteres.' }),
-  contact: z.string().min(3, { message: 'O nome do contato deve ter pelo menos 3 caracteres.' }),
-  phone: z.string().min(10, { message: 'Telefone inválido.' }),
-  email: z.string().email({ message: 'Email inválido.' }),
-  address: z.string().min(5, { message: 'Endereço muito curto.' }),
+  phone: z.string().optional(),
+  email: z.string().email({ message: 'Email inválido.' }).or(z.literal('')).optional(),
+  cnpj: z.string().optional(),
+  address: z.string().optional(),
 });
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
 
 interface SupplierFormProps {
   supplier?: Supplier | null;
-  onSubmit: (data: SupplierFormValues) => void;
+  onSubmit: (data: Omit<Supplier, 'id'>) => void;
+  onCancel?: () => void;
 }
 
-export function SupplierForm({ supplier, onSubmit }: SupplierFormProps) {
+export function SupplierForm({ supplier, onSubmit, onCancel }: SupplierFormProps) {
   const form = useForm<SupplierFormValues>({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
       name: '',
-      contact: '',
       phone: '',
       email: '',
+      cnpj: '',
       address: '',
     },
   });
@@ -42,17 +44,23 @@ export function SupplierForm({ supplier, onSubmit }: SupplierFormProps) {
     } else {
       form.reset({
         name: '',
-        contact: '',
         phone: '',
         email: '',
+        cnpj: '',
         address: '',
       });
     }
   }, [supplier, form]);
 
+  const handleSubmit = (values: SupplierFormValues) => {
+    onSubmit(values as Omit<Supplier, 'id'>);
+    form.reset();
+    if(onCancel) onCancel();
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -60,7 +68,7 @@ export function SupplierForm({ supplier, onSubmit }: SupplierFormProps) {
             <FormItem>
               <FormLabel>Nome da Empresa</FormLabel>
               <FormControl>
-                <Input placeholder="Nome do fornecedor" {...field} />
+                <Input placeholder="Nome do fornecedor" {...field} value={field.value ?? ''}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -68,45 +76,43 @@ export function SupplierForm({ supplier, onSubmit }: SupplierFormProps) {
         />
         <FormField
           control={form.control}
-          name="contact"
+          name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome do Contato</FormLabel>
+              <FormLabel>Telefone</FormLabel>
               <FormControl>
-                <Input placeholder="Pessoa de contato" {...field} />
+                <Input placeholder="(11) 99999-9999" {...field} value={field.value ?? ''}/>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefone</FormLabel>
-                <FormControl>
-                  <Input placeholder="(00) 00000-0000" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="contato@fornecedor.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="contato@fornecedor.com" {...field} value={field.value ?? ''}/>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="cnpj"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CNPJ</FormLabel>
+              <FormControl>
+                <Input placeholder="00.000.000/0000-00" {...field} value={field.value ?? ''}/>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="address"
@@ -114,13 +120,18 @@ export function SupplierForm({ supplier, onSubmit }: SupplierFormProps) {
             <FormItem>
               <FormLabel>Endereço</FormLabel>
               <FormControl>
-                <Input placeholder="Rua, número, cidade" {...field} />
+                <Textarea placeholder="Rua, número, bairro, cidade" {...field} value={field.value ?? ''}/>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">Salvar Fornecedor</Button>
+        <div className="flex flex-col gap-2 pt-4">
+          <Button type="submit" className="w-full">{supplier ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}</Button>
+          {supplier && onCancel && (
+            <Button type="button" variant="ghost" className="w-full" onClick={onCancel}>Cancelar Edição</Button>
+          )}
+        </div>
       </form>
     </Form>
   );

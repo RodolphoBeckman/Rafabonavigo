@@ -140,7 +140,7 @@ export function PurchaseForm() {
                     <Input type="number" value={item.quantity} onChange={e => updateCartItem(item.productId, { quantity: parseInt(e.target.value) || 0 })} className="h-8 w-20"/>
                   </TableCell>
                   <TableCell>
-                    <Input type="number" value={item.unitPrice} onChange={e => updateCartItem(item.productId, { unitPrice: parseFloat(e.target.value) || 0 })} className="h-8 w-24"/>
+                    <Input type="number" step="0.01" value={item.unitPrice} onChange={e => updateCartItem(item.productId, { unitPrice: parseFloat(e.target.value) || 0 })} className="h-8 w-24"/>
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.productId)}><Trash2 className="h-4 w-4 text-red-500"/></Button>

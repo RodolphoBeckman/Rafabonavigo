@@ -18,9 +18,9 @@ export interface Client {
 export interface Supplier {
   id: string;
   name: string;
-  contact: string;
   phone: string;
   email: string;
+  cnpj: string;
   address: string;
 }
 

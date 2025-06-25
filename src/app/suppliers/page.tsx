@@ -1,70 +1,73 @@
 "use client";
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PlusCircle } from 'lucide-react';
 import type { Supplier } from '@/lib/types';
 import { SupplierForm } from '@/components/suppliers/supplier-form';
 import { SupplierList } from '@/components/suppliers/supplier-list';
 import useLocalStorage from '@/hooks/use-local-storage';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useLocalStorage<Supplier[]>('suppliers', []);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
-
-  const handleAddSupplier = () => {
-    setSelectedSupplier(null);
-    setIsDialogOpen(true);
-  };
 
   const handleEditSupplier = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
-    setIsDialogOpen(true);
   };
 
   const handleDeleteSupplier = (supplierId: string) => {
     if (window.confirm('Tem certeza que deseja remover este fornecedor?')) {
-      setSuppliers(suppliers.filter((s) => s.id !== supplierId));
+      setSuppliers(suppliers.filter((p) => p.id !== supplierId));
+      if (selectedSupplier?.id === supplierId) {
+        setSelectedSupplier(null);
+      }
     }
   };
 
   const handleFormSubmit = (supplier: Omit<Supplier, 'id'>) => {
     if (selectedSupplier) {
-      setSuppliers(suppliers.map((s) => (s.id === selectedSupplier.id ? { ...s, ...supplier } : s)));
+      setSuppliers(suppliers.map((p) => (p.id === selectedSupplier.id ? { ...p, ...supplier, id: p.id } : p)));
     } else {
       setSuppliers([...suppliers, { ...supplier, id: new Date().toISOString() }]);
     }
-    setIsDialogOpen(false);
+    setSelectedSupplier(null);
   };
 
+  const handleCancelEdit = () => {
+    setSelectedSupplier(null);
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="flex justify-end">
-        <Button onClick={handleAddSupplier}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Fornecedor
-        </Button>
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="lg:col-span-2">
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-xl font-headline">{selectedSupplier ? 'Editar Fornecedor' : 'Cadastrar Fornecedor'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <SupplierForm
+                    key={selectedSupplier ? selectedSupplier.id : 'new'}
+                    supplier={selectedSupplier}
+                    onSubmit={handleFormSubmit}
+                    onCancel={handleCancelEdit}
+                />
+            </CardContent>
+        </Card>
       </div>
-      
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="font-headline">{selectedSupplier ? 'Editar Fornecedor' : 'Adicionar Novo Fornecedor'}</DialogTitle>
-          </DialogHeader>
-          <SupplierForm
-            supplier={selectedSupplier}
-            onSubmit={handleFormSubmit}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      <SupplierList
-        suppliers={suppliers}
-        onEdit={handleEditSupplier}
-        onDelete={handleDeleteSupplier}
-      />
+      <div className="lg:col-span-3">
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-xl font-headline">Fornecedores Cadastrados</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <SupplierList
+                    suppliers={suppliers}
+                    onEdit={handleEditSupplier}
+                    onDelete={handleDeleteSupplier}
+                />
+            </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

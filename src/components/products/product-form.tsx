@@ -100,10 +100,19 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
         <FormField
           control={form.control}
           name="photo"
-          render={({ field: { onChange, ...rest } }) => (
+          render={({ field: { value, onChange, ...fieldProps } }) => (
             <FormItem>
               <FormLabel>Foto do Produto</FormLabel>
-              <FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} /></FormControl>
+              <FormControl>
+                <Input
+                  {...fieldProps}
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    onChange(event.target.files);
+                  }}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

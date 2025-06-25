@@ -32,9 +32,7 @@ export function MainSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <SidebarTrigger />
-          </Button>
+          <SidebarTrigger className="md:hidden" />
           <Link href="/" className="flex items-center gap-2 font-headline font-bold text-xl">
             <CircleDollarSignIcon className="w-6 h-6 text-primary" />
             <span className="group-data-[collapsible=icon]:hidden">StockPilot</span>

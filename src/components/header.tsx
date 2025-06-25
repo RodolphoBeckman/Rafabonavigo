@@ -7,6 +7,7 @@ import { Package, ShoppingCart, LayoutDashboard, Users, Receipt, Settings, Clipb
 import { cn } from '@/lib/utils';
 import useLocalStorage from '@/hooks/use-local-storage';
 import type { AppSettings } from '@/lib/types';
+import { useState, useEffect } from 'react';
 
 const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,13 +23,18 @@ const navItems = [
 export function AppHeader() {
     const pathname = usePathname();
     const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot', logoUrl: '' });
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
 
     return (
         <header className="bg-card shadow-sm sticky top-0 z-40">
             <div className="container mx-auto px-4">
                 <div className="text-center py-4 border-b flex justify-center items-center gap-3">
-                    {settings.logoUrl && (
+                    {isMounted && settings.logoUrl && (
                         <Image src={settings.logoUrl} alt="Logo" width={32} height={32} className="h-8 w-8 object-contain" />
                     )}
                     <h1 className="text-2xl font-bold font-headline">{settings.appName}</h1>

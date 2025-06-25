@@ -19,10 +19,10 @@ export interface Client {
 export interface Supplier {
   id: string;
   name: string;
-  phone: string;
-  email: string;
-  cnpj: string;
-  address: string;
+  phone?: string;
+  email?: string;
+  cnpj?: string;
+  address?: string;
 }
 
 export interface SaleItem {
@@ -64,4 +64,9 @@ export interface AccountReceivable {
   dueDate: string;
   status: 'pending' | 'paid';
   paidDate?: string;
+}
+
+export interface AppSettings {
+  appName: string;
+  logoUrl: string;
 }

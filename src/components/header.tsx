@@ -1,28 +1,37 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Package, ShoppingCart, Landmark, Users, Receipt, Building, Truck } from 'lucide-react';
+import { Package, ShoppingCart, LayoutDashboard, Users, Receipt, Building, Truck, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import useLocalStorage from '@/hooks/use-local-storage';
+import type { AppSettings } from '@/lib/types';
 
 const navItems = [
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/products', label: 'Produtos', icon: Package },
     { href: '/sales', label: 'Vendas', icon: ShoppingCart },
-    { href: '/', label: 'Caixa', icon: Landmark },
     { href: '/clients', label: 'Clientes', icon: Users },
     { href: '/accounts-receivable', label: 'Contas a Receber', icon: Receipt },
     { href: '/suppliers', label: 'Fornecedores', icon: Building },
     { href: '/purchases', label: 'Compras', icon: Truck },
+    { href: '/settings', label: 'Configurações', icon: Settings },
 ];
 
 export function AppHeader() {
     const pathname = usePathname();
+    const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot', logoUrl: '' });
+
 
     return (
         <header className="bg-card shadow-sm sticky top-0 z-40">
             <div className="container mx-auto px-4">
-                <div className="text-center py-4 border-b">
-                    <h1 className="text-2xl font-bold font-headline">Controle de Mercadoria</h1>
+                <div className="text-center py-4 border-b flex justify-center items-center gap-3">
+                    {settings.logoUrl && (
+                        <Image src={settings.logoUrl} alt="Logo" width={32} height={32} className="h-8 w-8 object-contain" />
+                    )}
+                    <h1 className="text-2xl font-bold font-headline">{settings.appName}</h1>
                 </div>
                 <nav className="flex justify-center">
                     <ul className="flex items-center space-x-1 sm:space-x-2 p-1 overflow-x-auto">
@@ -32,7 +41,7 @@ export function AppHeader() {
                                     href={item.href}
                                     className={cn(
                                         'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
-                                        pathname === item.href
+                                        (pathname === item.href)
                                             ? 'bg-primary text-primary-foreground shadow-sm'
                                             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                     )}

@@ -2,6 +2,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  costPrice?: number;
   quantity: number;
   photoUrl?: string;
 }
@@ -31,7 +32,7 @@ export interface SaleItem {
 }
 
 export interface Sale {
-  id: string;
+  id:string;
   items: SaleItem[];
   total: number;
   discount: number;

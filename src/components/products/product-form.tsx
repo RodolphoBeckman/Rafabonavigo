@@ -13,7 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const productSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
-  price: z.coerce.number().positive({ message: 'O preço deve ser um número positivo.' }),
+  price: z.coerce.number().positive({ message: 'O preço de venda deve ser um número positivo.' }),
+  costPrice: z.coerce.number().min(0, { message: 'O preço de custo não pode ser negativo.' }).optional(),
   quantity: z.coerce.number().int().min(0, { message: 'A quantidade não pode ser negativa.' }),
   photo: z.any().optional(),
 });
@@ -30,20 +31,21 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
   const { toast } = useToast();
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', price: 0, quantity: 0, photo: undefined },
+    defaultValues: { name: '', price: 0, costPrice: 0, quantity: 0, photo: undefined },
   });
 
   useEffect(() => {
     if (product) {
-      form.reset({ name: product.name, price: product.price, quantity: product.quantity });
+      form.reset({ name: product.name, price: product.price, costPrice: product.costPrice, quantity: product.quantity });
     } else {
-      form.reset({ name: '', price: 0, quantity: 0, photo: undefined });
+      form.reset({ name: '', price: 0, costPrice: 0, quantity: 0, photo: undefined });
     }
   }, [product, form]);
 
   const handleFormSubmit = async (values: ProductFormValues) => {
     let photoUrl: string | undefined = product?.photoUrl;
-    const file = values.photo?.[0];
+    const photoField = form.getValues('photo');
+    const file = photoField?.[0];
     
     if (file) {
       if (file.size > 2 * 1024 * 1024) { // 2MB limit
@@ -59,7 +61,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
     }
     
     onSubmit({ ...values, photoUrl });
-    form.reset({ name: '', price: 0, quantity: 0, photo: undefined });
+    form.reset({ name: '', price: 0, costPrice: 0, quantity: 0, photo: undefined });
   };
 
   return (
@@ -88,17 +90,30 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Preço (R$)</FormLabel>
-              <FormControl><Input type="number" step="0.01" placeholder="Ex: 29.99" {...field} value={field.value ?? ''} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Preço Venda (R$)</FormLabel>
+                <FormControl><Input type="number" step="0.01" placeholder="Ex: 29.99" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="costPrice"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Preço Custo (R$)</FormLabel>
+                <FormControl><Input type="number" step="0.01" placeholder="Ex: 19.99" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
           name="quantity"
@@ -119,6 +134,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
               <FormControl>
                 <Input
                   {...fieldProps}
+                  value={undefined}
                   type="file"
                   accept="image/*"
                   onChange={(event) => {

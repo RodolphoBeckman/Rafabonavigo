@@ -14,11 +14,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Search, Trash2, PlusCircle } from 'lucide-react';
 import type { Product, Supplier, Purchase, PurchaseItem } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const purchaseSchema = z.object({
   supplierId: z.string().min(1, 'É necessário selecionar um fornecedor.'),
 });
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
+
+const newProductSchema = z.object({
+    name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+    sellingPrice: z.coerce.number().min(0, "O preço de venda não pode ser negativo."),
+    costPrice: z.coerce.number().min(0, "O preço de custo não pode ser negativo."),
+});
+type NewProductFormValues = z.infer<typeof newProductSchema>;
+
 
 export function PurchaseForm() {
   const { toast } = useToast();
@@ -28,9 +38,19 @@ export function PurchaseForm() {
   
   const [cart, setCart] = useState<PurchaseItem[]>([]);
   const [productSearch, setProductSearch] = useState('');
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
+  });
+
+  const newProductForm = useForm<NewProductFormValues>({
+      resolver: zodResolver(newProductSchema),
+      defaultValues: {
+          name: '',
+          sellingPrice: 0,
+          costPrice: 0,
+      }
   });
 
   const availableProducts = useMemo(() => {
@@ -44,7 +64,7 @@ export function PurchaseForm() {
       if (existingItem) {
         return prev.map(item => item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { productId: product.id, productName: product.name, quantity: 1, unitPrice: product.price }];
+      return [...prev, { productId: product.id, productName: product.name, quantity: 1, unitPrice: product.costPrice || 0 }];
     });
     setProductSearch('');
   };
@@ -84,10 +104,34 @@ export function PurchaseForm() {
     setCart([]);
     form.reset();
   };
+
+  const handleAddNewProduct = (values: NewProductFormValues) => {
+    const newProduct: Product = {
+      id: new Date().toISOString(),
+      name: values.name,
+      price: values.sellingPrice,
+      costPrice: values.costPrice,
+      quantity: 0,
+    };
+    setProducts((prevProducts) => [...prevProducts, newProduct]);
+    setCart(prev => {
+        return [...prev, { productId: newProduct.id, productName: newProduct.name, quantity: 1, unitPrice: values.costPrice }];
+    });
+    toast({ title: `Produto "${newProduct.name}" cadastrado e adicionado à compra.` });
+    setIsAddProductDialogOpen(false);
+    newProductForm.reset();
+    setProductSearch('');
+  };
+  
+  const openNewProductDialog = () => {
+    newProductForm.setValue('name', productSearch);
+    setIsAddProductDialogOpen(true);
+  }
   
   const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Registrar Nova Compra</CardTitle>
@@ -112,13 +156,19 @@ export function PurchaseForm() {
                     <Input placeholder="Buscar produto por nome..." value={productSearch} onChange={e => setProductSearch(e.target.value)} className="pl-8"/>
                 </div>
               </PopoverTrigger>
-              {availableProducts.length > 0 && (
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                  <ul className="space-y-1 p-2">
-                    {availableProducts.map(p => <li key={p.id} onClick={() => addToCart(p)} className="p-2 hover:bg-muted rounded-md cursor-pointer text-sm">{p.name}</li>)}
-                  </ul>
-                </PopoverContent>
-              )}
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <ul className="space-y-1 p-2">
+                  {availableProducts.map(p => <li key={p.id} onClick={() => addToCart(p)} className="p-2 hover:bg-muted rounded-md cursor-pointer text-sm">{p.name}</li>)}
+                </ul>
+                {productSearch && availableProducts.length === 0 && (
+                  <div className="p-2 border-t">
+                    <Button variant="outline" className="w-full" onClick={openNewProductDialog}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Cadastrar "{productSearch}"
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
             </Popover>
         </div>
 
@@ -162,5 +212,56 @@ export function PurchaseForm() {
         </div>
       </CardContent>
     </Card>
+
+    <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
+      <DialogContent>
+          <DialogHeader>
+              <DialogTitle>Cadastrar Novo Produto</DialogTitle>
+          </DialogHeader>
+          <Form {...newProductForm}>
+              <form onSubmit={newProductForm.handleSubmit(handleAddNewProduct)} className="space-y-4">
+                  <FormField
+                      control={newProductForm.control}
+                      name="name"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Nome do Produto</FormLabel>
+                          <FormControl><Input {...field} /></FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={newProductForm.control}
+                        name="costPrice"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Preço de Custo (R$)</FormLabel>
+                            <FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} /></FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={newProductForm.control}
+                        name="sellingPrice"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Preço de Venda (R$)</FormLabel>
+                            <FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)}/></FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                  </div>
+                  <DialogFooter>
+                      <Button type="submit">Cadastrar e Adicionar</Button>
+                  </DialogFooter>
+              </form>
+          </Form>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

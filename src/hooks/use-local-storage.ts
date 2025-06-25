@@ -16,22 +16,6 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       return initialValue;
     }
   });
-  
-  useEffect(() => {
-    // This effect runs only on the client, after hydration.
-    // It ensures that we are using the most up-to-date value from localStorage.
-    try {
-      const item = window.localStorage.getItem(key);
-      if (item) {
-        setStoredValue(JSON.parse(item));
-      } else {
-        // If no item, set the initial value in localStorage
-        window.localStorage.setItem(key, JSON.stringify(initialValue));
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }, [key, initialValue]);
 
   const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {

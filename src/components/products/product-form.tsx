@@ -81,7 +81,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Preço (R$)</FormLabel>
-              <FormControl><Input type="number" step="0.01" placeholder="Ex: 29.99" {...field} /></FormControl>
+              <FormControl><Input type="number" step="0.01" placeholder="Ex: 29.99" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -92,7 +92,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Quantidade</FormLabel>
-              <FormControl><Input type="number" placeholder="Ex: 100" {...field} /></FormControl>
+              <FormControl><Input type="number" placeholder="Ex: 100" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}

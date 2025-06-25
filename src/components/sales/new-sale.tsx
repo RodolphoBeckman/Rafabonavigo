@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,9 +15,11 @@ import { Search, X, Trash2, PlusCircle, UserCheck } from 'lucide-react';
 import useLocalStorage from '@/hooks/use-local-storage';
 import type { Product, Client, Sale, SaleItem, AccountReceivable } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const saleSchema = z.object({
   paymentMethod: z.enum(['dinheiro', 'cartao_debito', 'cartao_credito', 'pix', 'a_prazo']),
+  discount: z.coerce.number().min(0, "Desconto não pode ser negativo.").optional(),
 });
 
 type SaleFormValues = z.infer<typeof saleSchema>;
@@ -36,7 +38,7 @@ export function NewSale() {
 
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
-    defaultValues: { paymentMethod: 'dinheiro' },
+    defaultValues: { paymentMethod: 'dinheiro', discount: 0 },
   });
 
   const filteredProducts = useMemo(() => {
@@ -84,7 +86,9 @@ export function NewSale() {
     }
   };
 
-  const total = cart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
+  const subtotal = cart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
+  const discount = form.watch('discount') || 0;
+  const total = subtotal - discount;
 
   const onSubmit = (data: SaleFormValues) => {
     if (cart.length === 0) {
@@ -101,6 +105,7 @@ export function NewSale() {
       id: new Date().toISOString(),
       items: cart,
       total,
+      discount: data.discount || 0,
       paymentMethod: data.paymentMethod,
       date: new Date().toISOString(),
       clientId: selectedClient?.id,
@@ -135,7 +140,7 @@ export function NewSale() {
     setCart([]);
     setSelectedClient(null);
     setClientSearch('');
-    form.reset();
+    form.reset({ paymentMethod: 'dinheiro', discount: 0 });
   };
 
   const getProductName = (productId: string) => products.find(p => p.id === productId)?.name || 'Produto desconhecido';
@@ -255,30 +260,62 @@ export function NewSale() {
             </Table>
         </div>
 
-        <div className="flex justify-between items-center">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-center gap-4">
-                <Select onValueChange={(value) => form.setValue('paymentMethod', value as SaleFormValues['paymentMethod'])} defaultValue="dinheiro">
-                    <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Forma de pagamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                        <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
-                        <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
-                        <SelectItem value="pix">PIX</SelectItem>
-                        <SelectItem value="a_prazo">A Prazo</SelectItem>
-                    </SelectContent>
-                </Select>
-                 <Button type="submit" size="lg">
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    Finalizar Venda
-                </Button>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="paymentMethod"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Forma de Pagamento</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione o pagamento" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                        <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
+                                        <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
+                                        <SelectItem value="pix">PIX</SelectItem>
+                                        <SelectItem value="a_prazo">A Prazo</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="discount"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Desconto (R$)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div className="flex justify-between items-center pt-4">
+                    <Button type="submit" size="lg">
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Finalizar Venda
+                    </Button>
+                     <div className="text-right">
+                        <p className="text-muted-foreground text-sm">Subtotal: {formatCurrency(subtotal)}</p>
+                        {discount > 0 && <p className="text-muted-foreground text-sm text-destructive">Desconto: -{formatCurrency(discount)}</p>}
+                        <p className="text-muted-foreground">Total</p>
+                        <p className="text-3xl font-bold font-headline">{formatCurrency(total)}</p>
+                    </div>
+                </div>
             </form>
-            <div className="text-right">
-                <p className="text-muted-foreground">Total</p>
-                <p className="text-3xl font-bold font-headline">{formatCurrency(total)}</p>
-            </div>
-        </div>
+        </Form>
       </CardContent>
     </Card>
   );

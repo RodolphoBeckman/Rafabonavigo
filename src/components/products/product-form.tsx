@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -64,6 +65,18 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+        {product?.photoUrl && (
+          <div className="flex justify-center pb-4">
+            <Image
+              src={product.photoUrl}
+              alt={product.name}
+              width={80}
+              height={80}
+              className="rounded-md object-cover"
+              data-ai-hint="product image"
+            />
+          </div>
+        )}
         <FormField
           control={form.control}
           name="name"

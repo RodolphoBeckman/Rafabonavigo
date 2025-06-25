@@ -34,6 +34,7 @@ export interface Sale {
   id: string;
   items: SaleItem[];
   total: number;
+  discount: number;
   paymentMethod: 'dinheiro' | 'cartao_debito' | 'cartao_credito' | 'pix' | 'a_prazo';
   date: string;
   clientId?: string;

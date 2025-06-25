@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -97,6 +97,22 @@ export function SalesHistory() {
                         </TableRow>
                       ))}
                     </TableBody>
+                    <TableFooter>
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-right font-medium">Subtotal</TableCell>
+                            <TableCell className="text-right font-medium">{formatCurrency(sale.items.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0))}</TableCell>
+                        </TableRow>
+                        {sale.discount > 0 && (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-right font-medium text-destructive">Desconto</TableCell>
+                                <TableCell className="text-right font-medium text-destructive">-{formatCurrency(sale.discount)}</TableCell>
+                            </TableRow>
+                        )}
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
+                            <TableCell className="text-right font-bold">{formatCurrency(sale.total)}</TableCell>
+                        </TableRow>
+                    </TableFooter>
                   </Table>
                 </AccordionContent>
               </AccordionItem>

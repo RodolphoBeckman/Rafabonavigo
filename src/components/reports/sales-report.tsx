@@ -29,7 +29,7 @@ export function SalesReport() {
   const [sales] = useLocalStorage<Sale[]>('sales', []);
   const [clients] = useLocalStorage<Client[]>('clients', []);
   const [products] = useLocalStorage<Product[]>('products', []);
-  const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot', logoUrl: '' });
+  const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
   const [date, setDate] = useState<DateRange | undefined>({ from: addDays(new Date(), -30), to: new Date() });
 
   const getClientName = (clientId?: string) => {

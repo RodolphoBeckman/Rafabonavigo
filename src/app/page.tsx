@@ -31,7 +31,7 @@ export default function DashboardPage() {
   const [clients] = useLocalStorage<Client[]>('clients', []);
   const [products] = useLocalStorage<Product[]>('products', []);
   const [suppliers] = useLocalStorage<Supplier[]>('suppliers', []);
-  const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot', logoUrl: '' });
+  const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
   const [cashAdjustments] = useLocalStorage<CashAdjustment[]>('cash-adjustments', []);
 
   const [date, setDate] = useState<DateRange | undefined>({

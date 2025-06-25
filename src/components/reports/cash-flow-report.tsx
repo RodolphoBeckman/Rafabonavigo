@@ -47,7 +47,7 @@ export function CashFlowReport() {
   const [clients] = useLocalStorage<Client[]>('clients', []);
   const [suppliers] = useLocalStorage<Supplier[]>('suppliers', []);
   const [cashAdjustments, setCashAdjustments] = useLocalStorage<CashAdjustment[]>('cash-adjustments', []);
-  const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot', logoUrl: '' });
+  const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
   
   const [date, setDate] = useState<DateRange | undefined>({ from: addDays(new Date(), -30), to: new Date() });
 

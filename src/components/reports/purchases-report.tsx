@@ -19,7 +19,7 @@ import "jspdf-autotable";
 export function PurchasesReport() {
   const [purchases] = useLocalStorage<Purchase[]>('purchases', []);
   const [suppliers] = useLocalStorage<Supplier[]>('suppliers', []);
-  const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot', logoUrl: '' });
+  const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
   const [date, setDate] = useState<DateRange | undefined>({ from: addDays(new Date(), -30), to: new Date() });
 
   const getSupplierName = (supplierId: string) => suppliers.find(s => s.id === supplierId)?.name || 'Fornecedor desconhecido';

@@ -1,71 +1,73 @@
 "use client";
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PlusCircle } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import { ProductForm } from '@/components/products/product-form';
 import { ProductList } from '@/components/products/product-list';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { PageHeader } from '@/components/page-header';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function ProductsPage() {
   const [products, setProducts] = useLocalStorage<Product[]>('products', []);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
-  const handleAddProduct = () => {
-    setSelectedProduct(null);
-    setIsDialogOpen(true);
-  };
 
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
-    setIsDialogOpen(true);
   };
 
   const handleDeleteProduct = (productId: string) => {
     if (window.confirm('Tem certeza que deseja remover este produto?')) {
       setProducts(products.filter((p) => p.id !== productId));
+      if (selectedProduct?.id === productId) {
+        setSelectedProduct(null);
+      }
     }
   };
 
-  const handleFormSubmit = (product: Omit<Product, 'id'>) => {
+  const handleFormSubmit = (product: Omit<Product, 'id' | 'photoUrl'> & { photoUrl?: string }) => {
     if (selectedProduct) {
-      setProducts(products.map((p) => (p.id === selectedProduct.id ? { ...p, ...product } : p)));
+      setProducts(products.map((p) => (p.id === selectedProduct.id ? { ...p, ...product, id: p.id } : p)));
     } else {
       setProducts([...products, { ...product, id: new Date().toISOString() }]);
     }
-    setIsDialogOpen(false);
+    setSelectedProduct(null);
   };
 
+  const handleCancelEdit = () => {
+    setSelectedProduct(null);
+  }
+
   return (
-    <div className="container mx-auto py-8">
-      <PageHeader title="Produtos" description="Gerencie seus produtos, estoque e preços.">
-        <Button onClick={handleAddProduct}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Produto
-        </Button>
-      </PageHeader>
-      
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="font-headline">{selectedProduct ? 'Editar Produto' : 'Adicionar Novo Produto'}</DialogTitle>
-          </DialogHeader>
-          <ProductForm
-            product={selectedProduct}
-            onSubmit={handleFormSubmit}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      <ProductList
-        products={products}
-        onEdit={handleEditProduct}
-        onDelete={handleDeleteProduct}
-      />
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="lg:col-span-2">
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-xl font-headline">{selectedProduct ? 'Editar Produto' : 'Cadastrar Produto'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ProductForm
+                    key={selectedProduct ? selectedProduct.id : 'new'}
+                    product={selectedProduct}
+                    onSubmit={handleFormSubmit}
+                    onCancel={handleCancelEdit}
+                />
+            </CardContent>
+        </Card>
+      </div>
+      <div className="lg:col-span-3">
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-xl font-headline">Produtos Cadastrados</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ProductList
+                    products={products}
+                    onEdit={handleEditProduct}
+                    onDelete={handleDeleteProduct}
+                />
+            </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

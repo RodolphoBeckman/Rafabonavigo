@@ -8,7 +8,6 @@ import type { Client } from '@/lib/types';
 import { ClientForm } from '@/components/clients/client-form';
 import { ClientList } from '@/components/clients/client-list';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { PageHeader } from '@/components/page-header';
 
 export default function ClientsPage() {
   const [clients, setClients] = useLocalStorage<Client[]>('clients', []);
@@ -41,13 +40,13 @@ export default function ClientsPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <PageHeader title="Clientes" description="Adicione, edite e visualize os dados dos seus clientes.">
+    <div className="space-y-8">
+      <div className="flex justify-end">
         <Button onClick={handleAddClient}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Adicionar Cliente
         </Button>
-      </PageHeader>
+      </div>
       
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">

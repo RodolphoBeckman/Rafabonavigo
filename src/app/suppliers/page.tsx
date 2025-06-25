@@ -8,7 +8,6 @@ import type { Supplier } from '@/lib/types';
 import { SupplierForm } from '@/components/suppliers/supplier-form';
 import { SupplierList } from '@/components/suppliers/supplier-list';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { PageHeader } from '@/components/page-header';
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useLocalStorage<Supplier[]>('suppliers', []);
@@ -41,13 +40,13 @@ export default function SuppliersPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <PageHeader title="Fornecedores" description="Gerencie as informações dos seus fornecedores.">
+    <div className="space-y-8">
+      <div className="flex justify-end">
         <Button onClick={handleAddSupplier}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Adicionar Fornecedor
         </Button>
-      </PageHeader>
+      </div>
       
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">

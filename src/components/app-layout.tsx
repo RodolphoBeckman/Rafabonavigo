@@ -1,21 +1,15 @@
 "use client";
 
 import React from 'react';
-import {
-  SidebarProvider,
-  SidebarInset,
-} from '@/components/ui/sidebar';
-import { MainSidebar } from './main-sidebar';
+import { AppHeader } from './header';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
-      <MainSidebar />
-      <SidebarInset>
-        <div className="p-4 sm:p-6 lg:p-8 bg-background min-h-screen">
+    <>
+      <AppHeader />
+      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
           {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </main>
+    </>
   );
 }

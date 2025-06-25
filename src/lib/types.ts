@@ -77,3 +77,11 @@ export interface Brand {
   id: string;
   name: string;
 }
+
+export interface CashAdjustment {
+  id: string;
+  date: string;
+  type: 'add' | 'remove';
+  amount: number;
+  description: string;
+}

@@ -5,7 +5,7 @@ import { addDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import useLocalStorage from "@/hooks/use-local-storage";
-import type { Sale, Purchase, AccountReceivable, Client, Product, AppSettings, Supplier } from "@/lib/types";
+import type { Sale, Purchase, AccountReceivable, Client, Product, AppSettings, Supplier, CashAdjustment } from "@/lib/types";
 import { Landmark, Users, Package, CreditCard, FileDown, Calendar as CalendarIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [products] = useLocalStorage<Product[]>('products', []);
   const [suppliers] = useLocalStorage<Supplier[]>('suppliers', []);
   const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot', logoUrl: '' });
+  const [cashAdjustments] = useLocalStorage<CashAdjustment[]>('cash-adjustments', []);
 
   const [date, setDate] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
@@ -67,9 +68,17 @@ export default function DashboardPage() {
         type: 'income'
     }));
 
-    return [...saleTransactions, ...purchaseTransactions, ...receivableTransactions]
+    const adjustmentTransactions: Transaction[] = cashAdjustments.map(adj => ({
+        id: `adj-${adj.id}`,
+        date: adj.date,
+        description: adj.description,
+        amount: adj.type === 'add' ? adj.amount : -adj.amount,
+        type: adj.type === 'add' ? 'income' : 'expense'
+      }));
+
+    return [...saleTransactions, ...purchaseTransactions, ...receivableTransactions, ...adjustmentTransactions]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sales, purchases, paidReceivables, clients, suppliers]);
+  }, [sales, purchases, paidReceivables, clients, suppliers, cashAdjustments]);
 
   const filteredTransactions = useMemo(() => {
     if (!date?.from) return allTransactions;

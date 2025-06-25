@@ -238,7 +238,7 @@ export function PurchaseForm() {
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Preço de Custo (R$)</FormLabel>
-                            <FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} /></FormControl>
+                            <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} /></FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
@@ -249,7 +249,7 @@ export function PurchaseForm() {
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Preço de Venda (R$)</FormLabel>
-                            <FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)}/></FormControl>
+                            <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} /></FormControl>
                             <FormMessage />
                             </FormItem>
                         )}

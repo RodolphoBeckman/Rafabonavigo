@@ -70,6 +70,7 @@ export interface AccountReceivable {
 
 export interface AppSettings {
   appName: string;
+  logoUrl?: string;
 }
 
 export interface Brand {

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Package, ShoppingCart, LayoutDashboard, Users, Receipt, Building, Truck, Settings } from 'lucide-react';
+import { Package, ShoppingCart, LayoutDashboard, Users, Receipt, Settings, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useLocalStorage from '@/hooks/use-local-storage';
 import type { AppSettings } from '@/lib/types';
@@ -14,8 +14,7 @@ const navItems = [
     { href: '/sales', label: 'Vendas', icon: ShoppingCart },
     { href: '/clients', label: 'Clientes', icon: Users },
     { href: '/accounts-receivable', label: 'Contas a Receber', icon: Receipt },
-    { href: '/suppliers', label: 'Fornecedores', icon: Building },
-    { href: '/purchases', label: 'Compras', icon: Truck },
+    { href: '/management', label: 'Gestão', icon: ClipboardList },
     { href: '/settings', label: 'Configurações', icon: Settings },
 ];
 
@@ -41,7 +40,7 @@ export function AppHeader() {
                                     href={item.href}
                                     className={cn(
                                         'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
-                                        (pathname === item.href)
+                                        (pathname === item.href || (item.href === '/management' && (pathname.startsWith('/suppliers') || pathname.startsWith('/purchases'))))
                                             ? 'bg-primary text-primary-foreground shadow-sm'
                                             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                     )}

@@ -5,6 +5,8 @@ export interface Product {
   costPrice?: number;
   quantity: number;
   photoUrl?: string;
+  supplierId?: string;
+  brandId?: string;
 }
 
 export interface Client {
@@ -69,4 +71,9 @@ export interface AccountReceivable {
 export interface AppSettings {
   appName: string;
   logoUrl: string;
+}
+
+export interface Brand {
+  id: string;
+  name: string;
 }

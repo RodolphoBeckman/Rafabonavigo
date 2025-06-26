@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { addDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
@@ -34,10 +34,14 @@ export default function DashboardPage() {
   const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
   const [cashAdjustments] = useLocalStorage<CashAdjustment[]>('cash-adjustments', []);
 
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -30),
-    to: new Date(),
-  });
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
+
+  useEffect(() => {
+    setDate({
+        from: addDays(new Date(), -30),
+        to: new Date(),
+    });
+  }, []);
 
   const paidReceivables = receivables.filter(r => r.status === 'paid');
 
@@ -81,7 +85,7 @@ export default function DashboardPage() {
   }, [sales, purchases, paidReceivables, clients, suppliers, cashAdjustments]);
 
   const filteredTransactions = useMemo(() => {
-    if (!date?.from) return allTransactions;
+    if (!date?.from) return [];
     const from = date.from;
     const to = date.to ? addDays(date.to, 1) : addDays(from, 1); // include the whole 'to' day
     return allTransactions.filter(t => {
@@ -222,7 +226,7 @@ export default function DashboardPage() {
                         />
                         </PopoverContent>
                     </Popover>
-                    <Button onClick={handleDownloadPdf} disabled={filteredTransactions.length === 0}>
+                    <Button onClick={handleDownloadPdf} disabled={!filteredTransactions || filteredTransactions.length === 0}>
                         <FileDown className="mr-2 h-4 w-4" />
                         Download PDF
                     </Button>
@@ -239,7 +243,7 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions.length > 0 ? (
+              {filteredTransactions && filteredTransactions.length > 0 ? (
                 filteredTransactions.slice(0, 10).map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>
@@ -265,7 +269,7 @@ export default function DashboardPage() {
               )}
             </TableBody>
           </Table>
-           {filteredTransactions.length > 10 && (
+           {filteredTransactions && filteredTransactions.length > 10 && (
                 <p className="text-center text-sm text-muted-foreground mt-4">
                     Mostrando as 10 transações mais recentes. O relatório em PDF inclui todas as transações do período.
                 </p>

@@ -130,7 +130,7 @@ export function PurchasesReport() {
                     {filteredPurchases.map(purchase => (
                     <AccordionItem value={purchase.id} key={purchase.id}>
                         <AccordionTrigger>
-                        <div className="flex justify-between w-full pr-4 items-center">
+                        <div className="flex justify-between items-center flex-1">
                             <div className="text-left">
                                 <p className="font-semibold">{getSupplierName(purchase.supplierId)}</p>
                                 <p className="text-sm text-muted-foreground">{new Date(purchase.date).toLocaleString('pt-BR')}</p>

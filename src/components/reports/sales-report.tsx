@@ -125,7 +125,7 @@ export function SalesReport() {
             {filteredSales.map((sale) => (
               <AccordionItem value={sale.id} key={sale.id}>
                 <AccordionTrigger>
-                  <div className="flex justify-between w-full pr-4 items-center">
+                  <div className="flex justify-between items-center flex-1">
                     <div className="text-left">
                         <p className="font-semibold">{getClientName(sale.clientId)}</p>
                         <p className="text-sm text-muted-foreground">{new Date(sale.date).toLocaleString('pt-BR')}</p>

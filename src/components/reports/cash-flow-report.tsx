@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { addDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
@@ -49,7 +49,11 @@ export function CashFlowReport() {
   const [cashAdjustments, setCashAdjustments] = useLocalStorage<CashAdjustment[]>('cash-adjustments', []);
   const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
   
-  const [date, setDate] = useState<DateRange | undefined>({ from: addDays(new Date(), -30), to: new Date() });
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
+
+  useEffect(() => {
+    setDate({ from: addDays(new Date(), -30), to: new Date() });
+  }, []);
 
   const form = useForm<AdjustmentFormValues>({
     resolver: zodResolver(adjustmentSchema),
@@ -106,7 +110,7 @@ export function CashFlowReport() {
   }, [sales, purchases, paidReceivables, clients, suppliers, cashAdjustments]);
   
   const filteredTransactions = useMemo(() => {
-    if (!date?.from) return allTransactions;
+    if (!date?.from) return [];
     const from = date.from;
     const to = date.to ? addDays(date.to, 1) : addDays(from, 1);
     return allTransactions.filter(t => new Date(t.date) >= from && new Date(t.date) < to);

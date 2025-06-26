@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { addDays, format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,11 @@ export function SalesReport() {
   const [clients] = useLocalStorage<Client[]>('clients', []);
   const [products] = useLocalStorage<Product[]>('products', []);
   const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
-  const [date, setDate] = useState<DateRange | undefined>({ from: addDays(new Date(), -30), to: new Date() });
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
+
+  useEffect(() => {
+    setDate({ from: addDays(new Date(), -30), to: new Date() });
+  }, []);
 
   const getClientName = (clientId?: string) => {
     if (!clientId) return 'Venda balcão';

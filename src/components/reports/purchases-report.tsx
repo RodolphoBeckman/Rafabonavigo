@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { addDays, format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import useLocalStorage from '@/hooks/use-local-storage';
@@ -29,7 +29,11 @@ export function PurchasesReport() {
   const [purchases] = useLocalStorage<Purchase[]>('purchases', []);
   const [suppliers] = useLocalStorage<Supplier[]>('suppliers', []);
   const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
-  const [date, setDate] = useState<DateRange | undefined>({ from: addDays(new Date(), -30), to: new Date() });
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
+
+  useEffect(() => {
+    setDate({ from: addDays(new Date(), -30), to: new Date() });
+  }, []);
 
   const getSupplierName = (supplierId: string) => suppliers.find(s => s.id === supplierId)?.name || 'Fornecedor desconhecido';
   const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

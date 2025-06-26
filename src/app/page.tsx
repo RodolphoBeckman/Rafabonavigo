@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { addDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import useLocalStorage from "@/hooks/use-local-storage";
 import type { Sale, Purchase, AccountReceivable, Client, Product, AppSettings, Supplier, CashAdjustment } from "@/lib/types";
-import { Landmark, Users, Package, CreditCard, FileDown, Calendar as CalendarIcon } from "lucide-react";
+import { Landmark, Users, Package, CreditCard, FileDown, Calendar as CalendarIcon, ShoppingCart, Truck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -38,11 +39,11 @@ export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     setDate({
         from: addDays(new Date(), -30),
         to: new Date(),
     });
-    setIsClient(true);
   }, []);
 
   const paidReceivables = receivables.filter(r => r.status === 'paid');
@@ -184,108 +185,146 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <CardTitle className="font-headline">Movimentação de Caixa</CardTitle>
-                    <p className="text-sm text-muted-foreground">Visualize o fluxo de entradas e saídas.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <Button
-                            id="date"
-                            variant={"outline"}
-                            className={cn(
-                            "w-[300px] justify-start text-left font-normal",
-                            !date && "text-muted-foreground"
-                            )}
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {isClient && date?.from ? (
-                            date.to ? (
-                                <>
-                                {format(date.from, "LLL dd, y", { locale: ptBR })} -{" "}
-                                {format(date.to, "LLL dd, y", { locale: ptBR })}
-                                </>
-                            ) : (
-                                format(date.from, "LLL dd, y", { locale: ptBR })
-                            )
-                            ) : (
-                            <span>Escolha um período</span>
-                            )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2">
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <CardTitle className="font-headline">Movimentação de Caixa</CardTitle>
+                        <p className="text-sm text-muted-foreground">Visualize o fluxo de entradas e saídas.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <Button
+                                id="date"
+                                variant={"outline"}
+                                className={cn(
+                                "w-[300px] justify-start text-left font-normal",
+                                !date && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {isClient && date?.from ? (
+                                date.to ? (
+                                    <>
+                                    {format(date.from, "LLL dd, y", { locale: ptBR })} -{" "}
+                                    {format(date.to, "LLL dd, y", { locale: ptBR })}
+                                    </>
+                                ) : (
+                                    format(date.from, "LLL dd, y", { locale: ptBR })
+                                )
+                                ) : (
+                                <span>Escolha um período</span>
+                                )}
+                            </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={date?.from}
+                                selected={date}
+                                onSelect={setDate}
+                                numberOfMonths={2}
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <Button onClick={handleDownloadPdf} disabled={!isClient || !filteredTransactions || filteredTransactions.length === 0}>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Download PDF
                         </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={date?.from}
-                            selected={date}
-                            onSelect={setDate}
-                            numberOfMonths={2}
-                        />
-                        </PopoverContent>
-                    </Popover>
-                    <Button onClick={handleDownloadPdf} disabled={!isClient || !filteredTransactions || filteredTransactions.length === 0}>
-                        <FileDown className="mr-2 h-4 w-4" />
-                        Download PDF
-                    </Button>
+                    </div>
                 </div>
-            </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Descrição</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="hidden md:table-cell text-right">Data</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isClient ? (
-                filteredTransactions.length > 0 ? (
-                filteredTransactions.slice(0, 10).map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>
-                      <div className="font-medium">{transaction.description}</div>
-                      <div className={`text-sm ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {transaction.type === 'income' ? 'Entrada' : 'Saída'}
-                      </div>
-                    </TableCell>
-                    <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(transaction.amount)}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-right text-muted-foreground">
-                      {new Date(transaction.date).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
+            </CardHeader>
+            <CardContent>
+            <Table>
+                <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                    Nenhuma transação encontrada para o período selecionado.
-                  </TableCell>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="hidden md:table-cell text-right">Data</TableHead>
                 </TableRow>
-              )
-              ) : (
-                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                    Carregando transações...
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-           {isClient && filteredTransactions.length > 10 && (
-                <p className="text-center text-sm text-muted-foreground mt-4">
-                    Mostrando as 10 transações mais recentes. O relatório em PDF inclui todas as transações do período.
-                </p>
-            )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                {isClient ? (
+                    filteredTransactions.length > 0 ? (
+                    filteredTransactions.slice(0, 10).map((transaction) => (
+                    <TableRow key={transaction.id}>
+                        <TableCell>
+                        <div className="font-medium">{transaction.description}</div>
+                        <div className={`text-sm ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                            {transaction.type === 'income' ? 'Entrada' : 'Saída'}
+                        </div>
+                        </TableCell>
+                        <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(transaction.amount)}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-right text-muted-foreground">
+                        {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                    </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                        Nenhuma transação encontrada para o período selecionado.
+                    </TableCell>
+                    </TableRow>
+                )
+                ) : (
+                    <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                        Carregando transações...
+                    </TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+            {isClient && filteredTransactions.length > 10 && (
+                    <p className="text-center text-sm text-muted-foreground mt-4">
+                        Mostrando as 10 transações mais recentes. O relatório em PDF inclui todas as transações do período.
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+        <div className="space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-headline">Atalhos Rápidos</CardTitle>
+                <p className="text-sm text-muted-foreground">Navegue rapidamente para as funções.</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button asChild variant="outline" className="h-28">
+                    <Link href="/sales" className="flex flex-col items-center justify-center gap-2">
+                      <ShoppingCart className="h-7 w-7 text-primary" />
+                      <span className="font-medium">Vendas</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-28">
+                    <Link href="/clients" className="flex flex-col items-center justify-center gap-2">
+                      <Users className="h-7 w-7 text-primary" />
+                      <span className="font-medium">Clientes</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-28">
+                    <Link href="/purchases" className="flex flex-col items-center justify-center gap-2">
+                      <Truck className="h-7 w-7 text-primary" />
+                      <span className="font-medium">Compras</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-28">
+                    <Link href="/products" className="flex flex-col items-center justify-center gap-2">
+                      <Package className="h-7 w-7 text-primary" />
+                      <span className="font-medium">Produtos</span>
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+        </div>
+      </div>
     </div>
   );
 }

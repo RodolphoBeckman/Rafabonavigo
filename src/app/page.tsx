@@ -34,13 +34,15 @@ export default function DashboardPage() {
   const [settings] = useLocalStorage<AppSettings>('app-settings', { appName: 'StockPilot' });
   const [cashAdjustments] = useLocalStorage<CashAdjustment[]>('cash-adjustments', []);
 
-  const [date, setDate] = useState<DateRange | undefined>(undefined);
+  const [date, setDate] = useState<DateRange | undefined>();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setDate({
         from: addDays(new Date(), -30),
         to: new Date(),
     });
+    setIsClient(true);
   }, []);
 
   const paidReceivables = receivables.filter(r => r.status === 'paid');
@@ -85,14 +87,14 @@ export default function DashboardPage() {
   }, [sales, purchases, paidReceivables, clients, suppliers, cashAdjustments]);
 
   const filteredTransactions = useMemo(() => {
-    if (!date?.from) return [];
+    if (!date?.from || !isClient) return [];
     const from = date.from;
     const to = date.to ? addDays(date.to, 1) : addDays(from, 1); // include the whole 'to' day
     return allTransactions.filter(t => {
         const tDate = new Date(t.date);
         return tDate >= from && tDate < to;
     })
-  }, [allTransactions, date]);
+  }, [allTransactions, date, isClient]);
 
 
   const totalIncome = useMemo(() => filteredTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0), [filteredTransactions]);
@@ -146,7 +148,7 @@ export default function DashboardPage() {
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(balance)}</div>
+            <div className="text-2xl font-bold">{isClient ? formatCurrency(balance) : 'R$ 0,00'}</div>
             <p className="text-xs text-muted-foreground">Balanço do período selecionado</p>
           </CardContent>
         </Card>
@@ -156,7 +158,7 @@ export default function DashboardPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalReceivables)}</div>
+            <div className="text-2xl font-bold">{isClient ? formatCurrency(totalReceivables) : 'R$ 0,00'}</div>
             <p className="text-xs text-muted-foreground">Total de vendas a prazo pendentes</p>
           </CardContent>
         </Card>
@@ -166,7 +168,7 @@ export default function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{clients.length}</div>
+            <div className="text-2xl font-bold">{isClient ? `+${clients.length}` : '+0'}</div>
             <p className="text-xs text-muted-foreground">Clientes cadastrados na base</p>
           </CardContent>
         </Card>
@@ -176,7 +178,7 @@ export default function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stockValue)}</div>
+            <div className="text-2xl font-bold">{isClient ? formatCurrency(stockValue) : 'R$ 0,00'}</div>
             <p className="text-xs text-muted-foreground">Baseado no preço de custo</p>
           </CardContent>
         </Card>
@@ -201,7 +203,7 @@ export default function DashboardPage() {
                             )}
                         >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {date?.from ? (
+                            {isClient && date?.from ? (
                             date.to ? (
                                 <>
                                 {format(date.from, "LLL dd, y", { locale: ptBR })} -{" "}
@@ -226,7 +228,7 @@ export default function DashboardPage() {
                         />
                         </PopoverContent>
                     </Popover>
-                    <Button onClick={handleDownloadPdf} disabled={!filteredTransactions || filteredTransactions.length === 0}>
+                    <Button onClick={handleDownloadPdf} disabled={!isClient || !filteredTransactions || filteredTransactions.length === 0}>
                         <FileDown className="mr-2 h-4 w-4" />
                         Download PDF
                     </Button>
@@ -243,7 +245,8 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions && filteredTransactions.length > 0 ? (
+              {isClient ? (
+                filteredTransactions.length > 0 ? (
                 filteredTransactions.slice(0, 10).map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>
@@ -266,10 +269,17 @@ export default function DashboardPage() {
                     Nenhuma transação encontrada para o período selecionado.
                   </TableCell>
                 </TableRow>
+              )
+              ) : (
+                 <TableRow>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                    Carregando transações...
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
-           {filteredTransactions && filteredTransactions.length > 10 && (
+           {isClient && filteredTransactions.length > 10 && (
                 <p className="text-center text-sm text-muted-foreground mt-4">
                     Mostrando as 10 transações mais recentes. O relatório em PDF inclui todas as transações do período.
                 </p>

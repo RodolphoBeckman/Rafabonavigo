@@ -31,18 +31,21 @@ export default function SettingsPage() {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      appName: '',
-      logoUrl: '',
+      appName: settings.appName,
+      logoUrl: settings.logoUrl || '',
     },
   });
 
+  // Use useEffect to reset the form when settings from localStorage are updated
   useEffect(() => {
     if (settings) {
-      form.setValue('appName', settings.appName);
-      form.setValue('logoUrl', settings.logoUrl || '');
+      form.reset({
+        appName: settings.appName,
+        logoUrl: settings.logoUrl || '',
+      });
       setLogoPreview(settings.logoUrl || null);
     }
-  }, [settings, form]);
+  }, [settings, form.reset]);
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -55,7 +58,7 @@ export default function SettingsPage() {
       reader.onloadend = () => {
         const result = reader.result as string;
         setLogoPreview(result);
-        form.setValue('logoUrl', result, { shouldValidate: true });
+        form.setValue('logoUrl', result, { shouldValidate: true, shouldDirty: true });
       };
       reader.readAsDataURL(file);
     }
@@ -63,15 +66,16 @@ export default function SettingsPage() {
   
   const handleRemoveLogo = () => {
     setLogoPreview(null);
-    form.setValue('logoUrl', '', { shouldValidate: true });
+    form.setValue('logoUrl', '', { shouldValidate: true, shouldDirty: true });
   }
 
-  const onSubmit = async (values: SettingsFormValues) => {
-    setSettings({
-      ...settings,
+  const onSubmit = (values: SettingsFormValues) => {
+    // Use a functional update to ensure we're updating from the latest state
+    setSettings(prevSettings => ({
+      ...prevSettings,
       appName: values.appName,
       logoUrl: values.logoUrl || undefined,
-    });
+    }));
     toast({ title: "Configurações salvas!", description: "Suas alterações foram salvas com sucesso." });
   };
 

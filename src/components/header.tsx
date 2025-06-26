@@ -40,7 +40,7 @@ export function AppHeader() {
                 </div>
                 <nav className="flex justify-center">
                     <ul className="flex items-center space-x-1 sm:space-x-2 p-1 overflow-x-auto">
-                        {navItems.map((item) => (
+                        {isClient && navItems.map((item) => (
                             <li key={item.href}>
                                 <Link
                                     href={item.href}

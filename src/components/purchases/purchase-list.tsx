@@ -1,12 +1,15 @@
 "use client";
 
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Purchase, Supplier } from '@/lib/types';
+import type { Purchase, Supplier, Product } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Truck } from 'lucide-react';
+import { Truck, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const paymentMethodLabels: { [key: string]: string } = {
   dinheiro: 'Dinheiro',
@@ -16,12 +19,44 @@ const paymentMethodLabels: { [key: string]: string } = {
   boleto: 'Boleto',
 };
 
-export function PurchaseList() {
-  const [purchases] = useLocalStorage<Purchase[]>('purchases', []);
+interface PurchaseListProps {
+  onEdit: (purchase: Purchase) => void;
+}
+
+export function PurchaseList({ onEdit }: PurchaseListProps) {
+  const { toast } = useToast();
+  const [purchases, setPurchases] = useLocalStorage<Purchase[]>('purchases', []);
+  const [products, setProducts] = useLocalStorage<Product[]>('products', []);
   const [suppliers] = useLocalStorage<Supplier[]>('suppliers', []);
 
   const getSupplierName = (supplierId: string) => suppliers.find(s => s.id === supplierId)?.name || 'Fornecedor desconhecido';
   const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const handleDelete = (purchaseId: string) => {
+    if (!window.confirm('Tem certeza que deseja apagar esta compra? O estoque será ajustado permanentemente.')) {
+      return;
+    }
+
+    const purchaseToDelete = purchases.find(p => p.id === purchaseId);
+    if (!purchaseToDelete) {
+      toast({ title: 'Erro', description: 'Compra não encontrada.', variant: 'destructive' });
+      return;
+    }
+
+    // Revert stock quantities
+    const updatedProducts = [...products];
+    purchaseToDelete.items.forEach(item => {
+      const productIndex = updatedProducts.findIndex(p => p.id === item.productId);
+      if (productIndex > -1) {
+        updatedProducts[productIndex].quantity -= item.quantity;
+      }
+    });
+    setProducts(updatedProducts);
+
+    // Remove the purchase
+    setPurchases(purchases.filter(p => p.id !== purchaseId));
+    toast({ title: 'Compra apagada com sucesso!', description: 'O estoque foi atualizado.' });
+  };
 
   const sortedPurchases = [...purchases].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -35,18 +70,37 @@ export function PurchaseList() {
           <Accordion type="single" collapsible className="w-full">
             {sortedPurchases.map(purchase => (
               <AccordionItem value={purchase.id} key={purchase.id}>
-                <AccordionTrigger>
-                  <div className="flex justify-between w-full pr-4 items-center">
-                    <div className="text-left">
-                      <p className="font-semibold">{getSupplierName(purchase.supplierId)}</p>
-                      <p className="text-sm text-muted-foreground">{new Date(purchase.date).toLocaleString('pt-BR')}</p>
+                <div className="flex items-center w-full">
+                  <AccordionTrigger className="flex-1 p-4">
+                    <div className="flex justify-between w-full items-center">
+                      <div className="text-left">
+                        <p className="font-semibold">{getSupplierName(purchase.supplierId)}</p>
+                        <p className="text-sm text-muted-foreground">{new Date(purchase.date).toLocaleString('pt-BR')}</p>
+                      </div>
+                      <div className="text-right">
+                          <p className="font-bold text-lg text-primary">{formatCurrency(purchase.total)}</p>
+                          <Badge variant="outline">{paymentMethodLabels[purchase.paymentMethod] || purchase.paymentMethod}</Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                        <p className="font-bold text-lg text-primary">{formatCurrency(purchase.total)}</p>
-                        <Badge variant="outline">{paymentMethodLabels[purchase.paymentMethod] || purchase.paymentMethod}</Badge>
-                    </div>
-                  </div>
-                </AccordionTrigger>
+                  </AccordionTrigger>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="mr-2 h-8 w-8 flex-shrink-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEdit(purchase)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Editar</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(purchase.id)} className="text-red-500 focus:text-red-500">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Excluir</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <AccordionContent>
                   <Table>
                     <TableHeader>

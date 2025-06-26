@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, Trash2, PlusCircle } from 'lucide-react';
+import { Search, Trash2, PlusCircle, Edit } from 'lucide-react';
 import type { Product, Supplier, Purchase, PurchaseItem } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -34,8 +34,13 @@ const newProductSchema = z.object({
 });
 type NewProductFormValues = z.infer<typeof newProductSchema>;
 
+interface PurchaseFormProps {
+    purchaseToEdit?: Purchase | null;
+    onSuccess: () => void;
+    onCancel: () => void;
+}
 
-export function PurchaseForm() {
+export function PurchaseForm({ purchaseToEdit, onSuccess, onCancel }: PurchaseFormProps) {
   const { toast } = useToast();
   const [products, setProducts] = useLocalStorage<Product[]>('products', []);
   const [suppliers] = useLocalStorage<Supplier[]>('suppliers', []);
@@ -64,6 +69,18 @@ export function PurchaseForm() {
           costPrice: 0,
       }
   });
+  
+  useEffect(() => {
+    if (purchaseToEdit) {
+      form.reset({
+        supplierId: purchaseToEdit.supplierId,
+        paymentMethod: purchaseToEdit.paymentMethod,
+        discount: purchaseToEdit.discount,
+        shipping: purchaseToEdit.shipping,
+      });
+      setCart(purchaseToEdit.items);
+    }
+  }, [purchaseToEdit, form]);
 
   const availableProducts = useMemo(() => {
     if (!productSearch) return [];
@@ -110,31 +127,72 @@ export function PurchaseForm() {
       return;
     }
 
-    const newPurchase: Purchase = {
-      id: new Date().toISOString(),
-      items: cart,
-      subtotal,
-      discount: data.discount || 0,
-      shipping: data.shipping || 0,
-      total,
-      supplierId: data.supplierId,
-      date: new Date().toISOString(),
-      paymentMethod: data.paymentMethod,
-    };
-    setPurchases([...purchases, newPurchase]);
+    if (purchaseToEdit) {
+        // Handle update
+        const updatedPurchase: Purchase = {
+            ...purchaseToEdit,
+            ...data,
+            items: cart,
+            subtotal,
+            total,
+            discount: data.discount || 0,
+            shipping: data.shipping || 0,
+            date: new Date().toISOString(), // Update date to last modified
+        };
+        
+        // Update stock
+        const updatedProducts = [...products];
+        const originalItems = purchaseToEdit.items;
+        const newItems = cart;
+        const productChanges = new Map<string, number>();
 
-    const newProducts = [...products];
-    cart.forEach(item => {
-      const productIndex = newProducts.findIndex(p => p.id === item.productId);
-      if (productIndex !== -1) {
-        newProducts[productIndex].quantity += item.quantity;
-      }
-    });
-    setProducts(newProducts);
+        originalItems.forEach(item => {
+            productChanges.set(item.productId, (productChanges.get(item.productId) || 0) - item.quantity);
+        });
+        newItems.forEach(item => {
+            productChanges.set(item.productId, (productChanges.get(item.productId) || 0) + item.quantity);
+        });
 
-    toast({ title: "Compra registrada com sucesso!" });
+        productChanges.forEach((quantityChange, productId) => {
+            const productIndex = updatedProducts.findIndex(p => p.id === productId);
+            if (productIndex !== -1) {
+                updatedProducts[productIndex].quantity += quantityChange;
+            }
+        });
+        
+        setProducts(updatedProducts);
+        setPurchases(purchases.map(p => p.id === updatedPurchase.id ? updatedPurchase : p));
+        toast({ title: "Compra atualizada com sucesso!" });
+
+    } else {
+        // Handle create
+        const newPurchase: Purchase = {
+          id: new Date().toISOString(),
+          items: cart,
+          subtotal,
+          discount: data.discount || 0,
+          shipping: data.shipping || 0,
+          total,
+          supplierId: data.supplierId,
+          date: new Date().toISOString(),
+          paymentMethod: data.paymentMethod,
+        };
+        setPurchases([...purchases, newPurchase]);
+
+        const newProducts = [...products];
+        cart.forEach(item => {
+          const productIndex = newProducts.findIndex(p => p.id === item.productId);
+          if (productIndex !== -1) {
+            newProducts[productIndex].quantity += item.quantity;
+          }
+        });
+        setProducts(newProducts);
+        toast({ title: "Compra registrada com sucesso!" });
+    }
+
     setCart([]);
     form.reset({ supplierId: '', paymentMethod: '', discount: 0, shipping: 0 });
+    onSuccess();
   };
 
   const handleAddNewProduct = (values: NewProductFormValues) => {
@@ -159,19 +217,9 @@ export function PurchaseForm() {
   const openNewProductDialog = () => {
     const isLikelyBarcode = /^\d{8,}$/.test(productSearch);
     if (isLikelyBarcode) {
-      newProductForm.reset({
-        name: '',
-        barcode: productSearch,
-        costPrice: 0,
-        sellingPrice: 0
-      });
+      newProductForm.reset({ name: '', barcode: productSearch, costPrice: 0, sellingPrice: 0 });
     } else {
-       newProductForm.reset({
-        name: productSearch,
-        barcode: '',
-        costPrice: 0,
-        sellingPrice: 0
-      });
+       newProductForm.reset({ name: productSearch, barcode: '', costPrice: 0, sellingPrice: 0 });
     }
     setIsAddProductDialogOpen(true);
   }
@@ -182,7 +230,7 @@ export function PurchaseForm() {
     <>
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Registrar Nova Compra</CardTitle>
+        <CardTitle className="font-headline">{purchaseToEdit ? 'Editar Compra' : 'Registrar Nova Compra'}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -314,7 +362,15 @@ export function PurchaseForm() {
                 </div>
 
                 <div className="flex justify-between items-center pt-4">
-                  <Button type="submit" size="lg"><PlusCircle className="mr-2 h-4 w-4"/>Registrar Compra</Button>
+                    <div className="flex gap-2">
+                        <Button type="submit" size="lg">
+                            {purchaseToEdit ? <Edit className="mr-2 h-4 w-4"/> : <PlusCircle className="mr-2 h-4 w-4"/>}
+                            {purchaseToEdit ? 'Salvar Alterações' : 'Registrar Compra'}
+                        </Button>
+                        {purchaseToEdit && (
+                            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+                        )}
+                    </div>
                   <div className="text-right space-y-1">
                       <p className="text-muted-foreground text-sm">Subtotal: {formatCurrency(subtotal)}</p>
                       {shipping > 0 && <p className="text-muted-foreground text-sm">Frete: {formatCurrency(shipping)}</p>}

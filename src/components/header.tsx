@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 const navItems = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/', label: 'Painel', icon: LayoutDashboard },
     { href: '/products', label: 'Produtos', icon: Package },
     { href: '/sales', label: 'Vendas', icon: ShoppingCart },
     { href: '/clients', label: 'Clientes', icon: Users },

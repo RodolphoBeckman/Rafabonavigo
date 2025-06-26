@@ -16,6 +16,8 @@ import Image from 'next/image';
 
 const settingsSchema = z.object({
   appName: z.string().min(1, { message: 'O nome do aplicativo é obrigatório.' }),
+  logoUrl: z.string().optional(),
+  logoUpload: z.any().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -30,12 +32,14 @@ export default function SettingsPage() {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       appName: '',
+      logoUrl: '',
     },
   });
 
   useEffect(() => {
     if (settings) {
       form.setValue('appName', settings.appName);
+      form.setValue('logoUrl', settings.logoUrl || '');
       setLogoPreview(settings.logoUrl || null);
     }
   }, [settings, form]);
@@ -49,17 +53,24 @@ export default function SettingsPage() {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
+        const result = reader.result as string;
+        setLogoPreview(result);
+        form.setValue('logoUrl', result, { shouldValidate: true });
       };
       reader.readAsDataURL(file);
     }
   };
+  
+  const handleRemoveLogo = () => {
+    setLogoPreview(null);
+    form.setValue('logoUrl', '', { shouldValidate: true });
+  }
 
   const onSubmit = async (values: SettingsFormValues) => {
     setSettings({
       ...settings,
       appName: values.appName,
-      logoUrl: logoPreview || undefined,
+      logoUrl: values.logoUrl || undefined,
     });
     toast({ title: "Configurações salvas!", description: "Suas alterações foram salvas com sucesso." });
   };
@@ -197,19 +208,25 @@ export default function SettingsPage() {
                 )}
               />
 
-              <FormItem>
-                <FormLabel>Logo do Aplicativo</FormLabel>
-                {logoPreview && (
-                  <div className="mt-2 flex items-center gap-4">
-                    <Image src={logoPreview} alt="Pré-visualização da logo" width={40} height={40} className="rounded-md object-contain" />
-                     <Button type="button" variant="outline" size="sm" onClick={() => setLogoPreview(null)}>Remover Logo</Button>
-                  </div>
+              <FormField
+                control={form.control}
+                name="logoUpload"
+                render={() => (
+                   <FormItem>
+                    <FormLabel>Logo do Aplicativo</FormLabel>
+                    {logoPreview && (
+                      <div className="mt-2 flex items-center gap-4">
+                        <Image src={logoPreview} alt="Pré-visualização da logo" width={40} height={40} className="rounded-md object-contain" />
+                        <Button type="button" variant="outline" size="sm" onClick={handleRemoveLogo}>Remover Logo</Button>
+                      </div>
+                    )}
+                    <FormControl>
+                      <Input type="file" accept="image/png, image/jpeg, image/webp, image/svg+xml" onChange={handleLogoChange} className="pt-1.5"/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                <FormControl>
-                  <Input type="file" accept="image/png, image/jpeg, image/webp, image/svg+xml" onChange={handleLogoChange} className="pt-1.5"/>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+              />
               
               <Button type="submit" className="w-full">Salvar Alterações</Button>
             </form>

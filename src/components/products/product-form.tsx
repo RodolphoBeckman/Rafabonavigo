@@ -19,7 +19,8 @@ const productSchema = z.object({
   price: z.coerce.number().positive({ message: 'O preço de venda deve ser um número positivo.' }),
   costPrice: z.coerce.number().min(0, { message: 'O preço de custo não pode ser negativo.' }).optional(),
   quantity: z.coerce.number().int().min(0, { message: 'A quantidade não pode ser negativa.' }),
-  photo: z.any().optional(),
+  photoUrl: z.string().optional(),
+  photoUpload: z.any().optional(),
   supplierId: z.string().optional(),
   brandId: z.string().optional(),
 });
@@ -40,7 +41,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' },
+    defaultValues: { name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photoUrl: '', supplierId: 'none', brandId: 'none' },
   });
 
   useEffect(() => {
@@ -53,30 +54,24 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
         quantity: product.quantity,
         supplierId: product.supplierId || 'none',
         brandId: product.brandId || 'none',
+        photoUrl: product.photoUrl || '',
       });
       setPhotoPreview(product.photoUrl || null);
     } else {
-      form.reset({ name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' });
+      form.reset({ name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photoUrl: '', supplierId: 'none', brandId: 'none' });
       setPhotoPreview(null);
     }
   }, [product, form]);
 
   const handleFormSubmit = async (values: ProductFormValues) => {
-    let photoUrl: string | undefined = product?.photoUrl;
-    
-    if (photoPreview && photoPreview !== product?.photoUrl) {
-      photoUrl = photoPreview;
-    }
-
     const dataToSubmit = {
       ...values,
-      photoUrl,
       supplierId: values.supplierId === 'none' ? undefined : values.supplierId,
       brandId: values.brandId === 'none' ? undefined : values.brandId,
     };
     
     onSubmit(dataToSubmit);
-    form.reset({ name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' });
+    form.reset({ name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photoUrl: '', supplierId: 'none', brandId: 'none' });
     setPhotoPreview(null);
   };
   
@@ -89,7 +84,9 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
+        const result = reader.result as string;
+        setPhotoPreview(result);
+        form.setValue('photoUrl', result, { shouldValidate: true });
       };
       reader.readAsDataURL(file);
     }
@@ -211,8 +208,8 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
         />
         <FormField
           control={form.control}
-          name="photo"
-          render={({ field }) => (
+          name="photoUpload"
+          render={() => (
             <FormItem>
               <FormLabel>Foto do Produto</FormLabel>
               <FormControl>

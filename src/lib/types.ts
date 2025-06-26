@@ -54,9 +54,13 @@ export interface PurchaseItem {
 export interface Purchase {
   id: string;
   items: PurchaseItem[];
+  subtotal: number;
+  discount: number;
+  shipping: number;
   total: number;
   supplierId: string;
   date: string;
+  paymentMethod: string;
 }
 
 export interface AccountReceivable {

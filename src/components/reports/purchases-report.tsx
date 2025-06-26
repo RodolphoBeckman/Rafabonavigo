@@ -7,7 +7,7 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import type { Purchase, Supplier, AppSettings } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -15,6 +15,15 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, FileDown, Truck } from 'lucide-react';
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { Badge } from "../ui/badge";
+
+const paymentMethodLabels: { [key: string]: string } = {
+  dinheiro: 'Dinheiro',
+  cartao_debito: 'Débito',
+  cartao_credito: 'Crédito',
+  pix: 'PIX',
+  boleto: 'Boleto',
+};
 
 export function PurchasesReport() {
   const [purchases] = useLocalStorage<Purchase[]>('purchases', []);
@@ -48,11 +57,29 @@ export function PurchasesReport() {
     const body: any[] = [];
     filteredPurchases.forEach(purchase => {
         body.push([
-            { content: `${getSupplierName(purchase.supplierId)} - ${new Date(purchase.date).toLocaleDateString('pt-BR')}`, colSpan: 4, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
+            { content: `${getSupplierName(purchase.supplierId)} - ${new Date(purchase.date).toLocaleDateString('pt-BR')}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+             { content: `Pagamento: ${paymentMethodLabels[purchase.paymentMethod] || purchase.paymentMethod}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [240, 240, 240], halign: 'right' } }
         ]);
+        body.push(['Produto', 'Qtd.', 'Preço Unit.', { content: 'Subtotal', styles: { halign: 'right' } }]);
         purchase.items.forEach(item => {
             body.push([item.productName, item.quantity, formatCurrency(item.unitPrice), { content: formatCurrency(item.unitPrice * item.quantity), styles: { halign: 'right' } }]);
         });
+        body.push([
+            { content: 'Subtotal', colSpan: 3, styles: { halign: 'right' } },
+            { content: formatCurrency(purchase.subtotal), styles: { halign: 'right' } }
+        ]);
+        if(purchase.shipping > 0) {
+            body.push([
+                { content: 'Frete', colSpan: 3, styles: { halign: 'right' } },
+                { content: formatCurrency(purchase.shipping), styles: { halign: 'right' } }
+            ]);
+        }
+        if(purchase.discount > 0) {
+            body.push([
+                { content: 'Desconto', colSpan: 3, styles: { halign: 'right' } },
+                { content: `-${formatCurrency(purchase.discount)}`, styles: { halign: 'right', textColor: [255, 0, 0] } }
+            ]);
+        }
          body.push([
             { content: 'Total da Compra', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } },
             { content: formatCurrency(purchase.total), styles: { fontStyle: 'bold', halign: 'right' } }
@@ -61,7 +88,6 @@ export function PurchasesReport() {
     
     (doc as any).autoTable({
       startY: 35,
-      head: [['Produto', 'Qtd.', 'Preço Unit.', 'Subtotal']],
       body: body,
       foot: [
           [{ content: 'Total Geral de Compras', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold', fillColor: [230, 230, 230] } }, { content: formatCurrency(totalPurchases), styles: { halign: 'right', fontStyle: 'bold', fillColor: [230, 230, 230] } }],
@@ -102,10 +128,13 @@ export function PurchasesReport() {
                         <AccordionTrigger>
                         <div className="flex justify-between w-full pr-4 items-center">
                             <div className="text-left">
-                            <p className="font-semibold">{getSupplierName(purchase.supplierId)}</p>
-                            <p className="text-sm text-muted-foreground">{new Date(purchase.date).toLocaleString('pt-BR')}</p>
+                                <p className="font-semibold">{getSupplierName(purchase.supplierId)}</p>
+                                <p className="text-sm text-muted-foreground">{new Date(purchase.date).toLocaleString('pt-BR')}</p>
                             </div>
-                            <p className="font-bold text-lg text-primary">{formatCurrency(purchase.total)}</p>
+                            <div className="text-right">
+                                <p className="font-bold text-lg text-primary">{formatCurrency(purchase.total)}</p>
+                                <Badge variant="outline">{paymentMethodLabels[purchase.paymentMethod] || purchase.paymentMethod}</Badge>
+                            </div>
                         </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -128,6 +157,28 @@ export function PurchasesReport() {
                                 </TableRow>
                             ))}
                             </TableBody>
+                            <TableFooter>
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-right">Subtotal</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(purchase.subtotal)}</TableCell>
+                                </TableRow>
+                                {purchase.shipping > 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-right">Frete</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(purchase.shipping)}</TableCell>
+                                    </TableRow>
+                                )}
+                                {purchase.discount > 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-right text-destructive">Desconto</TableCell>
+                                        <TableCell className="text-right text-destructive">-{formatCurrency(purchase.discount)}</TableCell>
+                                    </TableRow>
+                                )}
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
+                                    <TableCell className="text-right font-bold">{formatCurrency(purchase.total)}</TableCell>
+                                </TableRow>
+                            </TableFooter>
                         </Table>
                         </AccordionContent>
                     </AccordionItem>

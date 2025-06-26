@@ -19,6 +19,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 
 const purchaseSchema = z.object({
   supplierId: z.string().min(1, 'É necessário selecionar um fornecedor.'),
+  paymentMethod: z.string().min(1, 'É necessário selecionar uma forma de pagamento.'),
+  discount: z.coerce.number().min(0, "Desconto não pode ser negativo.").optional().default(0),
+  shipping: z.coerce.number().min(0, "Frete não pode ser negativo.").optional().default(0),
 });
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
@@ -43,6 +46,12 @@ export function PurchaseForm() {
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
+    defaultValues: {
+      supplierId: '',
+      paymentMethod: '',
+      discount: 0,
+      shipping: 0
+    }
   });
 
   const newProductForm = useForm<NewProductFormValues>({
@@ -89,7 +98,10 @@ export function PurchaseForm() {
     setCart(cart.map(item => item.productId === productId ? { ...item, ...newValues } : item));
   };
 
-  const total = cart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
+  const subtotal = useMemo(() => cart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0), [cart]);
+  const discount = form.watch('discount') || 0;
+  const shipping = form.watch('shipping') || 0;
+  const total = subtotal - discount + shipping;
 
   const onSubmit = (data: PurchaseFormValues) => {
     if (cart.length === 0) {
@@ -100,9 +112,13 @@ export function PurchaseForm() {
     const newPurchase: Purchase = {
       id: new Date().toISOString(),
       items: cart,
+      subtotal,
+      discount: data.discount || 0,
+      shipping: data.shipping || 0,
       total,
       supplierId: data.supplierId,
       date: new Date().toISOString(),
+      paymentMethod: data.paymentMethod,
     };
     setPurchases([...purchases, newPurchase]);
 
@@ -117,7 +133,7 @@ export function PurchaseForm() {
 
     toast({ title: "Compra registrada com sucesso!" });
     setCart([]);
-    form.reset();
+    form.reset({ supplierId: '', paymentMethod: '', discount: 0, shipping: 0 });
   };
 
   const handleAddNewProduct = (values: NewProductFormValues) => {
@@ -167,80 +183,147 @@ export function PurchaseForm() {
       <CardHeader>
         <CardTitle className="font-headline">Registrar Nova Compra</CardTitle>
       </CardHeader>
-      <CardContent as="form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Select onValueChange={(value) => form.setValue('supplierId', value)} >
-            <SelectTrigger>
-                <SelectValue placeholder="Selecione um fornecedor" />
-            </SelectTrigger>
-            <SelectContent>
-                {suppliers.length > 0 ? suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>) : <SelectItem value="-" disabled>Nenhum fornecedor cadastrado</SelectItem>}
-            </SelectContent>
-        </Select>
-        {form.formState.errors.supplierId && <p className="text-sm font-medium text-destructive">{form.formState.errors.supplierId.message}</p>}
-        
-        <div className="space-y-2">
-            <label className="text-sm font-medium">Adicionar Produtos</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Buscar por nome ou código de barras..." value={productSearch} onChange={e => handleProductSearchChange(e.target.value)} className="pl-8"/>
+      <CardContent>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                    control={form.control}
+                    name="supplierId"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Fornecedor</FormLabel>
+                             <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um fornecedor" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {suppliers.length > 0 ? suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>) : <SelectItem value="-" disabled>Nenhum fornecedor cadastrado</SelectItem>}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                
+                <div className="space-y-2">
+                    <FormLabel>Adicionar Produtos</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar por nome ou código de barras..." value={productSearch} onChange={e => handleProductSearchChange(e.target.value)} className="pl-8"/>
+                        </div>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <ul className="space-y-1 p-2">
+                          {availableProducts.map(p => <li key={p.id} onClick={() => addToCart(p)} className="p-2 hover:bg-muted rounded-md cursor-pointer text-sm">{p.name}</li>)}
+                        </ul>
+                        {productSearch && (
+                          <div className="p-2 border-t">
+                            <Button variant="outline" type="button" className="w-full" onClick={openNewProductDialog}>
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Cadastrar novo produto
+                            </Button>
+                          </div>
+                        )}
+                      </PopoverContent>
+                    </Popover>
                 </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                <ul className="space-y-1 p-2">
-                  {availableProducts.map(p => <li key={p.id} onClick={() => addToCart(p)} className="p-2 hover:bg-muted rounded-md cursor-pointer text-sm">{p.name}</li>)}
-                </ul>
-                {productSearch && (
-                  <div className="p-2 border-t">
-                    <Button variant="outline" className="w-full" onClick={openNewProductDialog}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Cadastrar novo produto
-                    </Button>
+
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Produto</TableHead>
+                        <TableHead className="w-[100px]">Qtd.</TableHead>
+                        <TableHead className="w-[120px]">Preço Unit.</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cart.length > 0 ? cart.map(item => (
+                        <TableRow key={item.productId}>
+                          <TableCell>{item.productName}</TableCell>
+                          <TableCell>
+                            <Input type="number" value={item.quantity} onChange={e => updateCartItem(item.productId, { quantity: parseInt(e.target.value) || 0 })} className="h-8 w-20"/>
+                          </TableCell>
+                          <TableCell>
+                            <Input type="number" step="0.01" value={item.unitPrice} onChange={e => updateCartItem(item.productId, { unitPrice: parseFloat(e.target.value) || 0 })} className="h-8 w-24"/>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" type="button" onClick={() => removeFromCart(item.productId)}><Trash2 className="h-4 w-4 text-red-500"/></Button>
+                          </TableCell>
+                        </TableRow>
+                      )) : (
+                        <TableRow><TableCell colSpan={4} className="text-center h-24 text-muted-foreground">Nenhum produto adicionado.</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="paymentMethod"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Forma de Pagamento</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione..." />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                                        <SelectItem value="pix">PIX</SelectItem>
+                                        <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
+                                        <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
+                                        <SelectItem value="boleto">Boleto</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="shipping"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Frete (R$)</FormLabel>
+                                <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="discount"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Desconto (R$)</FormLabel>
+                                <FormControl><Input type="number" step="0.01" placeholder="0,00" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div className="flex justify-between items-center pt-4">
+                  <Button type="submit" size="lg"><PlusCircle className="mr-2 h-4 w-4"/>Registrar Compra</Button>
+                  <div className="text-right space-y-1">
+                      <p className="text-muted-foreground text-sm">Subtotal: {formatCurrency(subtotal)}</p>
+                      {shipping > 0 && <p className="text-muted-foreground text-sm">Frete: {formatCurrency(shipping)}</p>}
+                      {discount > 0 && <p className="text-muted-foreground text-sm text-destructive">Desconto: -{formatCurrency(discount)}</p>}
+                      <p className="text-muted-foreground">Total da Compra</p>
+                      <p className="text-3xl font-bold font-headline">{formatCurrency(total)}</p>
                   </div>
-                )}
-              </PopoverContent>
-            </Popover>
-        </div>
-
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead className="w-[100px]">Qtd.</TableHead>
-                <TableHead className="w-[120px]">Preço Unit.</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {cart.length > 0 ? cart.map(item => (
-                <TableRow key={item.productId}>
-                  <TableCell>{item.productName}</TableCell>
-                  <TableCell>
-                    <Input type="number" value={item.quantity} onChange={e => updateCartItem(item.productId, { quantity: parseInt(e.target.value) || 0 })} className="h-8 w-20"/>
-                  </TableCell>
-                  <TableCell>
-                    <Input type="number" step="0.01" value={item.unitPrice} onChange={e => updateCartItem(item.productId, { unitPrice: parseFloat(e.target.value) || 0 })} className="h-8 w-24"/>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.productId)}><Trash2 className="h-4 w-4 text-red-500"/></Button>
-                  </TableCell>
-                </TableRow>
-              )) : (
-                <TableRow><TableCell colSpan={4} className="text-center h-24 text-muted-foreground">Nenhum produto adicionado.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <Button type="submit" size="lg"><PlusCircle className="mr-2 h-4 w-4"/>Registrar Compra</Button>
-          <div className="text-right">
-            <p className="text-muted-foreground">Total da Compra</p>
-            <p className="text-3xl font-bold font-headline">{formatCurrency(total)}</p>
-          </div>
-        </div>
+                </div>
+            </form>
+        </Form>
       </CardContent>
     </Card>
 

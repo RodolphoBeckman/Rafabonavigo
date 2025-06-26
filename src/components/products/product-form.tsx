@@ -160,7 +160,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Fornecedor</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+              <Select onValueChange={field.onChange} value={field.value || 'none'}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um fornecedor" />
@@ -181,7 +181,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Marca</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+              <Select onValueChange={field.onChange} value={field.value || 'none'}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma marca" />

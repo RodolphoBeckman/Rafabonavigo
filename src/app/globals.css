@@ -64,5 +64,21 @@
   }
   body {
     @apply bg-background text-foreground;
+    position: relative;
+    overflow-x: clip;
+  }
+
+  body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 600px;
+    height: 600px;
+    transform: translate(-50%, -50%);
+    background-image: radial-gradient(circle, hsla(var(--primary), 0.15), hsla(var(--chart-2), 0.1), transparent 70%);
+    filter: blur(120px);
+    z-index: -1;
+    pointer-events: none;
   }
 }

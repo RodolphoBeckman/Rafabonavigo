@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -99,8 +100,8 @@ export function PurchaseForm() {
   };
 
   const subtotal = useMemo(() => cart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0), [cart]);
-  const discount = form.watch('discount') || 0;
-  const shipping = form.watch('shipping') || 0;
+  const discount = Number(form.watch('discount')) || 0;
+  const shipping = Number(form.watch('shipping')) || 0;
   const total = subtotal - discount + shipping;
 
   const onSubmit = (data: PurchaseFormValues) => {

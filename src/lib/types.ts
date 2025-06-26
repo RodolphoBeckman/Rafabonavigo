@@ -90,3 +90,15 @@ export interface CashAdjustment {
   amount: number;
   description: string;
 }
+
+export interface BackupData {
+  products?: Product[];
+  clients?: Client[];
+  suppliers?: Supplier[];
+  brands?: Brand[];
+  sales?: Sale[];
+  purchases?: Purchase[];
+  receivables?: AccountReceivable[];
+  cashAdjustments?: CashAdjustment[];
+  'app-settings'?: AppSettings;
+}

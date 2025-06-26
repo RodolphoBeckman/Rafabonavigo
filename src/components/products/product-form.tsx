@@ -69,8 +69,8 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
     const dataToSubmit = {
       ...values,
       photoUrl,
-      supplierId: values.supplierId === 'none' ? undefined : values.supplierId,
-      brandId: values.brandId === 'none' ? undefined : values.brandId,
+      supplierId: values.supplierId === '' ? undefined : values.supplierId,
+      brandId: values.brandId === '' ? undefined : values.brandId,
     };
     
     onSubmit(dataToSubmit);
@@ -160,14 +160,14 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Fornecedor</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || 'none'}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um fornecedor" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
+                  <SelectItem value="">Nenhum</SelectItem>
                   {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -181,14 +181,14 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Marca</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || 'none'}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma marca" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                   <SelectItem value="none">Nenhuma</SelectItem>
+                   <SelectItem value="">Nenhuma</SelectItem>
                   {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                 </SelectContent>
               </Select>

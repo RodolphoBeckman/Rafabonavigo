@@ -24,6 +24,7 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 const newProductSchema = z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+    barcode: z.string().optional(),
     sellingPrice: z.coerce.number().min(0, "O preço de venda não pode ser negativo."),
     costPrice: z.coerce.number().min(0, "O preço de custo não pode ser negativo."),
 });
@@ -48,6 +49,7 @@ export function PurchaseForm() {
       resolver: zodResolver(newProductSchema),
       defaultValues: {
           name: '',
+          barcode: '',
           sellingPrice: 0,
           costPrice: 0,
       }
@@ -55,7 +57,10 @@ export function PurchaseForm() {
 
   const availableProducts = useMemo(() => {
     if (!productSearch) return [];
-    return products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()));
+    return products.filter(p => 
+        p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        (p.barcode && p.barcode.includes(productSearch))
+    );
   }, [productSearch, products]);
 
   const addToCart = (product: Product) => {
@@ -67,6 +72,16 @@ export function PurchaseForm() {
       return [...prev, { productId: product.id, productName: product.name, quantity: 1, unitPrice: product.costPrice || 0 }];
     });
     setProductSearch('');
+  };
+
+  const handleProductSearchChange = (value: string) => {
+    const foundProduct = products.find(p => p.barcode && p.barcode === value && p.barcode !== "");
+    if (foundProduct) {
+      addToCart(foundProduct);
+      setProductSearch('');
+    } else {
+      setProductSearch(value);
+    }
   };
 
   const removeFromCart = (productId: string) => setCart(cart.filter(item => item.productId !== productId));
@@ -109,6 +124,7 @@ export function PurchaseForm() {
     const newProduct: Product = {
       id: new Date().toISOString(),
       name: values.name,
+      barcode: values.barcode,
       price: values.sellingPrice,
       costPrice: values.costPrice,
       quantity: 0,
@@ -124,7 +140,22 @@ export function PurchaseForm() {
   };
   
   const openNewProductDialog = () => {
-    newProductForm.setValue('name', productSearch);
+    const isLikelyBarcode = /^\d{8,}$/.test(productSearch);
+    if (isLikelyBarcode) {
+      newProductForm.reset({
+        name: '',
+        barcode: productSearch,
+        costPrice: 0,
+        sellingPrice: 0
+      });
+    } else {
+       newProductForm.reset({
+        name: productSearch,
+        barcode: '',
+        costPrice: 0,
+        sellingPrice: 0
+      });
+    }
     setIsAddProductDialogOpen(true);
   }
   
@@ -153,18 +184,18 @@ export function PurchaseForm() {
               <PopoverTrigger asChild>
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Buscar produto por nome..." value={productSearch} onChange={e => setProductSearch(e.target.value)} className="pl-8"/>
+                    <Input placeholder="Buscar por nome ou código de barras..." value={productSearch} onChange={e => handleProductSearchChange(e.target.value)} className="pl-8"/>
                 </div>
               </PopoverTrigger>
               <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                 <ul className="space-y-1 p-2">
                   {availableProducts.map(p => <li key={p.id} onClick={() => addToCart(p)} className="p-2 hover:bg-muted rounded-md cursor-pointer text-sm">{p.name}</li>)}
                 </ul>
-                {productSearch && availableProducts.length === 0 && (
+                {productSearch && (
                   <div className="p-2 border-t">
                     <Button variant="outline" className="w-full" onClick={openNewProductDialog}>
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Cadastrar "{productSearch}"
+                      Cadastrar novo produto
                     </Button>
                   </div>
                 )}
@@ -226,6 +257,17 @@ export function PurchaseForm() {
                       render={({ field }) => (
                           <FormItem>
                           <FormLabel>Nome do Produto</FormLabel>
+                          <FormControl><Input {...field} /></FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                   <FormField
+                      control={newProductForm.control}
+                      name="barcode"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Código de Barras</FormLabel>
                           <FormControl><Input {...field} /></FormControl>
                           <FormMessage />
                           </FormItem>

@@ -15,6 +15,7 @@ import useLocalStorage from '@/hooks/use-local-storage';
 
 const productSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
+  barcode: z.string().optional(),
   price: z.coerce.number().positive({ message: 'O preço de venda deve ser um número positivo.' }),
   costPrice: z.coerce.number().min(0, { message: 'O preço de custo não pode ser negativo.' }).optional(),
   quantity: z.coerce.number().int().min(0, { message: 'A quantidade não pode ser negativa.' }),
@@ -39,13 +40,14 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' },
+    defaultValues: { name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' },
   });
 
   useEffect(() => {
     if (product) {
       form.reset({
         name: product.name,
+        barcode: product.barcode || '',
         price: product.price,
         costPrice: product.costPrice,
         quantity: product.quantity,
@@ -54,7 +56,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
       });
       setPhotoPreview(product.photoUrl || null);
     } else {
-      form.reset({ name: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' });
+      form.reset({ name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' });
       setPhotoPreview(null);
     }
   }, [product, form]);
@@ -74,7 +76,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
     };
     
     onSubmit(dataToSubmit);
-    form.reset({ name: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' });
+    form.reset({ name: '', barcode: '', price: 0, costPrice: 0, quantity: 0, photo: undefined, supplierId: 'none', brandId: 'none' });
     setPhotoPreview(null);
   };
   
@@ -115,6 +117,17 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
             <FormItem>
               <FormLabel>Nome do Produto</FormLabel>
               <FormControl><Input placeholder="Ex: Camiseta Branca" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="barcode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Código de Barras</FormLabel>
+              <FormControl><Input placeholder="Código de barras do produto" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )}

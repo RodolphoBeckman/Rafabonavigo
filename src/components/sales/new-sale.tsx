@@ -43,7 +43,11 @@ export function NewSale() {
 
   const filteredProducts = useMemo(() => {
     if (!productSearch) return [];
-    return products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) && p.quantity > 0);
+    return products.filter(p => 
+        (p.name.toLowerCase().includes(productSearch.toLowerCase()) || 
+        (p.barcode && p.barcode.includes(productSearch))) && 
+        p.quantity > 0
+    );
   }, [productSearch, products]);
 
   const filteredClients = useMemo(() => {
@@ -69,6 +73,21 @@ export function NewSale() {
       return [...prev, { productId: product.id, quantity: 1, unitPrice: product.price }];
     });
     setProductSearch('');
+  };
+
+  const handleProductSearchChange = (value: string) => {
+    const foundProduct = products.find(p => p.barcode && p.barcode === value && p.barcode !== "");
+    if (foundProduct) {
+      if (foundProduct.quantity > 0) {
+        addToCart(foundProduct);
+        setProductSearch('');
+      } else {
+        toast({ title: "Estoque esgotado", description: `O produto ${foundProduct.name} não tem estoque.`, variant: "destructive" });
+        setProductSearch('');
+      }
+    } else {
+      setProductSearch(value);
+    }
   };
   
   const removeFromCart = (productId: string) => {
@@ -202,9 +221,9 @@ export function NewSale() {
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Buscar produto por nome..."
+                        placeholder="Buscar por nome ou código de barras..."
                         value={productSearch}
-                        onChange={e => setProductSearch(e.target.value)}
+                        onChange={e => handleProductSearchChange(e.target.value)}
                         className="pl-8"
                     />
                 </div>
